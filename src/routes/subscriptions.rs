@@ -1,7 +1,7 @@
+use actix_web::{web, HttpResponse};
 use chrono::Utc;
-use uuid::Uuid;
 use sqlx::PgPool;
-use actix_web::{web, HttpResponse };
+use uuid::Uuid;
 
 #[derive(serde::Deserialize)]
 pub struct FormData {
@@ -19,10 +19,13 @@ pub async fn subscribe(form: web::Form<FormData>, pool: web::Data<PgPool>) -> Ht
         form.email,
         form.name,
         Utc::now()
-    ).execute(
-        // `get_ref()` returns an immutable reference to the `PgConnection` wrapped by `web::Data` 
-        pool.get_ref()
-    ).await {
+    )
+    .execute(
+        // `get_ref()` returns an immutable reference to the `PgConnection` wrapped by `web::Data`
+        pool.get_ref(),
+    )
+    .await
+    {
         Ok(_) => HttpResponse::Ok().finish(),
         Err(e) => {
             println!("Failed to execute query: {}", e);

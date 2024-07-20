@@ -1,12 +1,12 @@
-use zero2prod::configuration::{get_configuration, DatabaseSettings};
-use zero2prod::startup::run;
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use std::net::TcpListener;
 use uuid::Uuid;
+use zero2prod::configuration::{get_configuration, DatabaseSettings};
+use zero2prod::startup::run;
 
 pub struct TestApp {
     pub address: String,
-    pub db_pool: PgPool
+    pub db_pool: PgPool,
 }
 
 /// Spin up an instance of our application
@@ -32,19 +32,24 @@ async fn spawn_app() -> TestApp {
     // Return an instance of TestApp
     TestApp {
         address,
-        db_pool: connection_pool
+        db_pool: connection_pool,
     }
 }
 
 pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
     // Create database
-    let mut connection = PgConnection::connect(
-        &config.connection_string_without_db()
-    ).await.expect("Failed to connect to Postgres");
-    connection.execute(format! (r#"CREATE DATABASE "{}";"#, config.database_name).as_str()).await.expect("Failed to create database.");
+    let mut connection = PgConnection::connect(&config.connection_string_without_db())
+        .await
+        .expect("Failed to connect to Postgres");
+    connection
+        .execute(format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
+        .await
+        .expect("Failed to create database.");
 
     // Migrate database
-    let connection_pool = PgPool::connect(&config.connection_string()).await.expect("Failed to connect to Postgres.");
+    let connection_pool = PgPool::connect(&config.connection_string())
+        .await
+        .expect("Failed to connect to Postgres.");
     sqlx::migrate!("./migrations")
         .run(&connection_pool)
         .await
@@ -95,9 +100,8 @@ async fn subscribe_returns_a_200_for_valid_form_data() {
         .await
         .expect("Failed to fetch saved subscription");
 
-    assert_eq! (saved.email, "ursula_le_guin@gmail.com");
-    assert_eq! (saved.name, "le guin");
-
+    assert_eq!(saved.email, "ursula_le_guin@gmail.com");
+    assert_eq!(saved.name, "le guin");
 }
 
 #[tokio::test]

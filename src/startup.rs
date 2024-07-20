@@ -1,11 +1,8 @@
-
 use crate::routes::{health_check, subscribe};
 use actix_web::dev::Server;
 use actix_web::{web, App, HttpServer};
 use sqlx::PgPool;
 use std::net::TcpListener;
-
-
 
 // Return an instance of a HttpServer using a TcpListener
 pub fn run(listener: TcpListener, db_pool: PgPool) -> Result<Server, std::io::Error> {
