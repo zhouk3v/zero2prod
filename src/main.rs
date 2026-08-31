@@ -2,6 +2,7 @@ use sqlx::PgPool;
 use std::net::TcpListener;
 use tracing::subscriber::set_global_default;
 use tracing_bunyan_formatter::{BunyanFormattingLayer, JsonStorageLayer};
+use tracing_log::LogTracer;
 use tracing_subscriber::{EnvFilter, Registry, layer::SubscriberExt};
 
 use zero2prod::configuration::get_configuration;
@@ -9,6 +10,8 @@ use zero2prod::startup::run;
 
 #[tokio::main]
 async fn main() -> Result<(), std::io::Error> {
+    // Redirect all 'log' events to the tracing subscriber
+    LogTracer::init().expect("Failed to set logger");
     // Setup tracing subscriber
     // Fallback to printing info-level or above spans
     let env_filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
