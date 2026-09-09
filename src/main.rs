@@ -16,7 +16,10 @@ async fn main() -> Result<(), std::io::Error> {
     let connection_pool =
         PgPool::connect_lazy(configuration.database.connection_string().expose_secret())
             .expect("Failed to connect to Postgres");
-    let address = format!("127.0.0.1:{}", configuration.application_port);
+    let address = format!(
+        "{}:{}",
+        configuration.application.host, configuration.application.port
+    );
     // Bubble up the io::Error if we failed to bind the address
     let listener = TcpListener::bind(address)?;
     // Otherwise call .await on our Server
