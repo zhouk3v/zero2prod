@@ -1,5 +1,5 @@
 //! tests/health_check.rs
-use secrecy::{ExposeSecret, SecretString};
+use secrecy::SecretString;
 use sqlx::{AssertSqlSafe, Connection, PgConnection, PgPool};
 use std::net::TcpListener;
 use std::sync::LazyLock;
