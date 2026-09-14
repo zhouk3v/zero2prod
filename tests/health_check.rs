@@ -60,10 +60,9 @@ pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
         ..config.clone()
     };
 
-    let mut connection =
-        PgConnection::connect(&maintenance_settings.connection_string().expose_secret())
-            .await
-            .expect("Failed to connect to Postgres");
+    let mut connection = PgConnection::connect_with(&maintenance_settings.connect_options())
+        .await
+        .expect("Failed to connect to Postgres");
     // connection
     //     .execute(format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
     //     .await
@@ -75,7 +74,7 @@ pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
         .expect("Failed to create database.");
 
     // Migrate Database
-    let connection_pool = PgPool::connect(&config.connection_string().expose_secret())
+    let connection_pool = PgPool::connect_with(config.connect_options())
         .await
         .expect("Failed to connect to Postgres");
     sqlx::migrate!("./migrations")

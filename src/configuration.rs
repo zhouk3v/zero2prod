@@ -1,4 +1,6 @@
 use secrecy::{ExposeSecret, SecretString};
+use serde_aux::field_attributes::deserialize_number_from_string;
+use sqlx::postgres::PgConnectOptions;
 
 #[derive(serde::Deserialize)]
 pub struct Settings {
@@ -8,6 +10,7 @@ pub struct Settings {
 
 #[derive(serde::Deserialize)]
 pub struct ApplicationSettings {
+    #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
     pub host: String,
 }
@@ -16,24 +19,20 @@ pub struct ApplicationSettings {
 pub struct DatabaseSettings {
     pub username: String,
     pub password: SecretString,
+    #[serde(deserialize_with = "deserialize_number_from_string")]
     pub port: u16,
     pub host: String,
     pub database_name: String,
 }
 
 impl DatabaseSettings {
-    pub fn connection_string(&self) -> SecretString {
-        SecretString::new(
-            format!(
-                "postgres://{}:{}@{}:{}/{}",
-                self.username,
-                self.password.expose_secret(),
-                self.host,
-                self.port,
-                self.database_name
-            )
-            .into(),
-        )
+    pub fn connect_options(&self) -> PgConnectOptions {
+        PgConnectOptions::new()
+            .host(&self.host)
+            .username(&self.username)
+            .password(&self.password.expose_secret())
+            .port(self.port)
+            .database(&self.database_name)
     }
 }
 
@@ -51,13 +50,20 @@ pub fn get_configuration() -> Result<Settings, config::ConfigError> {
     let environment_filename = format!("{}.yaml", environment.as_str());
     // Initialise our configuration reader
     let settings = config::Config::builder()
-        // Add configuration values from a file name "configuration.yaml".
+        // Add configuration values from base yaml file
         .add_source(config::File::from(
             configuration_directory.join("base.yaml"),
         ))
+        // Add configuration values from environment yaml file
         .add_source(config::File::from(
             configuration_directory.join(environment_filename),
         ))
+        // Add configuration vaules from environment variables (with a prefix of APP and '__' as a seperator)
+        .add_source(
+            config::Environment::with_prefix("APP")
+                .prefix_separator("_")
+                .separator("__"),
+        )
         .build()?;
 
     // Try to convert the configuration values it read into our Settings type
