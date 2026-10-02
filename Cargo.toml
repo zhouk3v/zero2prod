@@ -15,6 +15,7 @@ actix-web = "4.14.1"
 chrono = { version = "0.4.45", default-features = false, features = ["clock"] }
 claims = "0.8.0"
 config = "0.15.25"
+fake = "5.1.0"
 secrecy = { version = "0.10.3", features = ["serde"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde-aux = "4.7.0"
