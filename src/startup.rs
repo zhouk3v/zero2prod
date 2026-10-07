@@ -4,7 +4,7 @@ use sqlx::PgPool;
 use std::net::TcpListener;
 use tracing_actix_web::TracingLogger;
 
-use crate::email_client::{self, EmailClient};
+use crate::email_client::EmailClient;
 use crate::routes::health_check;
 use crate::routes::subscribe;
 
@@ -22,6 +22,7 @@ pub fn run(
             .route("/subscriptions", web::post().to(subscribe))
             // Register the connection as part of the application state
             .app_data(db_pool.clone())
+            .app_data(email_client.clone())
     })
     .listen(listener)?
     .run();
