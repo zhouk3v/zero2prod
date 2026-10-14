@@ -10,30 +10,48 @@ use crate::email_client::EmailClient;
 use crate::routes::health_check;
 use crate::routes::subscribe;
 
-pub async fn build(configuration: Settings) -> Result<Server, std::io::Error> {
-    let connection_pool = get_connection_pool(&configuration.database);
+pub struct Application {
+    port: u16,
+    server: Server,
+}
 
-    // Build an `EmailClient` using `configuration`
-    let sender_email = configuration
-        .email_client
-        .sender()
-        .expect("Invalid sender email address");
-    let timeout = configuration.email_client.timeout();
-    let email_client = EmailClient::new(
-        configuration.email_client.base_url,
-        sender_email,
-        configuration.email_client.authorization_token,
-        timeout,
-    );
+impl Application {
+    pub async fn build(configuration: Settings) -> Result<Self, std::io::Error> {
+        let connection_pool = get_connection_pool(&configuration.database);
 
-    let address = format!(
-        "{}:{}",
-        configuration.application.host, configuration.application.port
-    );
-    // Bubble up the io::Error if we failed to bind the address
-    let listener = TcpListener::bind(address)?;
-    // Otherwise call .await on our Server
-    run(listener, connection_pool, email_client)
+        // Build an `EmailClient` using `configuration`
+        let sender_email = configuration
+            .email_client
+            .sender()
+            .expect("Invalid sender email address");
+        let timeout = configuration.email_client.timeout();
+        let email_client = EmailClient::new(
+            configuration.email_client.base_url,
+            sender_email,
+            configuration.email_client.authorization_token,
+            timeout,
+        );
+
+        let address = format!(
+            "{}:{}",
+            configuration.application.host, configuration.application.port
+        );
+        // Bubble up the io::Error if we failed to bind the address
+        let listener = TcpListener::bind(address)?;
+        let port = listener.local_addr().unwrap().port();
+        // Otherwise call .await on our Server
+        let server = run(listener, connection_pool, email_client)?;
+
+        Ok(Self { port, server })
+    }
+
+    pub fn port(&self) -> u16 {
+        self.port
+    }
+
+    pub async fn run_until_stopped(self) -> Result<(), std::io::Error> {
+        self.server.await
+    }
 }
 
 pub fn get_connection_pool(configuration: &DatabaseSettings) -> PgPool {

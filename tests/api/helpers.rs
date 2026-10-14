@@ -4,7 +4,7 @@ use std::sync::LazyLock;
 use uuid::Uuid;
 
 use zero2prod::configuration::{DatabaseSettings, get_configuration};
-use zero2prod::startup::{build, get_connection_pool};
+use zero2prod::startup::{Application, get_connection_pool};
 use zero2prod::telemetry::{get_subscriber, init_subscriber};
 
 // Ensure that the `tracing` stack is only initialised once using `LazyLock`
@@ -45,13 +45,15 @@ pub async fn spawn_app() -> TestApp {
     // Create and migrate the database
     configure_database(&configuration.database).await;
 
-    let server = build(configuration.clone())
+    let application = Application::build(configuration.clone())
         .await
         .expect("Failed to build application");
-    let _ = tokio::spawn(server);
+    // Get port before spawning the application
+    let address = format!("http://127.0.0.1:{}", application.port());
+    let _ = tokio::spawn(application.run_until_stopped());
 
     TestApp {
-        address: todo!(),
+        address,
         db_pool: get_connection_pool(&configuration.database),
     }
 }
