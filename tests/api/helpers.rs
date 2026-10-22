@@ -46,6 +46,9 @@ pub async fn spawn_app() -> TestApp {
     // Initialize tracing
     LazyLock::force(&TRACING);
 
+    // Launch a mock server to stand in for Postmark's API
+    let email_server = MockServer::start().await;
+
     // Randomise configuration to ensure test isolation
     let configuration = {
         let mut c = get_configuration().expect("Failed to read configuration.");
@@ -53,6 +56,7 @@ pub async fn spawn_app() -> TestApp {
         c.database.database_name = Uuid::new_v4().to_string();
         // Use a random OS port
         c.application.port = 0;
+        c.email_client.base_url = email_server.uri();
         c
     };
 
@@ -65,17 +69,6 @@ pub async fn spawn_app() -> TestApp {
     // Get port before spawning the application
     let address = format!("http://127.0.0.1:{}", application.port());
     let _ = tokio::spawn(application.run_until_stopped());
-
-    // Launch a mock server to stand in for Postmark's API
-    let email_server = MockServer::start().await;
-
-    // Randomise configuration to ensure test isolation
-    let configuration = {
-        let mut c = get_configuration().expect("Failed to read configuration");
-        // Use the mock server as email API
-        c.email_client.base_url = email_server.uri();
-        c
-    };
 
     TestApp {
         address,
