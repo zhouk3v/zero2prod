@@ -2,6 +2,7 @@ use secrecy::SecretString;
 use sqlx::{AssertSqlSafe, Connection, PgConnection, PgPool};
 use std::sync::LazyLock;
 use uuid::Uuid;
+use wiremock::MockServer;
 
 use zero2prod::configuration::{DatabaseSettings, get_configuration};
 use zero2prod::startup::{Application, get_connection_pool};
@@ -23,6 +24,7 @@ static TRACING: LazyLock<()> = LazyLock::new(|| {
 pub struct TestApp {
     pub address: String,
     pub db_pool: PgPool,
+    pub email_server: MockServer,
 }
 
 impl TestApp {
@@ -64,9 +66,21 @@ pub async fn spawn_app() -> TestApp {
     let address = format!("http://127.0.0.1:{}", application.port());
     let _ = tokio::spawn(application.run_until_stopped());
 
+    // Launch a mock server to stand in for Postmark's API
+    let email_server = MockServer::start().await;
+
+    // Randomise configuration to ensure test isolation
+    let configuration = {
+        let mut c = get_configuration().expect("Failed to read configuration");
+        // Use the mock server as email API
+        c.email_client.base_url = email_server.uri();
+        c
+    };
+
     TestApp {
         address,
         db_pool: get_connection_pool(&configuration.database),
+        email_server,
     }
 }
 
