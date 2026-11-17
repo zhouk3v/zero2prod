@@ -9,6 +9,7 @@ use rand::rng;
 use sqlx::{Executor, PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
+use crate::domain::error_chain_fmt;
 use crate::{
     domain::{NewSubscriber, SubscriberEmail, SubscriberName},
     email_client::EmailClient,
@@ -117,7 +118,7 @@ pub async fn insert_subscriber(
         new_subscriber.name.as_ref(),
         Utc::now()
     );
-    transaction.execute(query).await.map_err(|e| e)?;
+    transaction.execute(query).await?;
     Ok(subscriber_id)
 }
 
@@ -164,19 +165,6 @@ impl std::error::Error for StoreTokenError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         Some(&self.0)
     }
-}
-
-fn error_chain_fmt(
-    e: &impl std::error::Error,
-    f: &mut std::fmt::Formatter<'_>,
-) -> std::fmt::Result {
-    writeln!(f, "{}\n", e)?;
-    let mut current = e.source();
-    while let Some(cause) = current {
-        writeln!(f, "Caused by: \n\t{}", cause)?;
-        current = cause.source();
-    }
-    Ok(())
 }
 
 #[tracing::instrument(
