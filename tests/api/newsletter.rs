@@ -69,6 +69,47 @@ async fn newsletters_are_delivered_to_confirmed_subscribers() {
     // Mock verifies on Drop that email wasn't sent
 }
 
+#[tokio::test]
+async fn newsletters_returns_400_for_invalid_data() {
+    // Arrange
+    let app = spawn_app().await;
+    let test_cases = vec![
+        (
+            serde_json::json!({
+                "content": {
+                    "text": "Newsletter body as plain text",
+                    "html": "<p>Newsletter body as HTML</P>",
+                }
+            }),
+            "missing title",
+        ),
+        (
+            serde_json::json!({
+                "title": "Newsletter title",
+            }),
+            "missing title",
+        ),
+    ];
+
+    for (invalid_body, error_message) in test_cases {
+        // Act
+        let response = reqwest::Client::new()
+            .post(&format!("{}/newsletters", &app.address))
+            .json(&invalid_body)
+            .send()
+            .await
+            .expect("Failed to execute request");
+
+        // Assert
+        assert_eq!(
+            400,
+            response.status().as_u16(),
+            "The API did not fail with 400 Bad Request when the payload was {}",
+            error_message
+        )
+    }
+}
+
 async fn create_unconfirmed_subscriber(app: &TestApp) -> ConfirmationLinks {
     let body = "name=le%20guin&email=ursula_le_guin%40gmail.com";
 
