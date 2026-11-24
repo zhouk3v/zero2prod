@@ -86,26 +86,6 @@ fn basic_authentication(headers: &HeaderMap) -> Result<Credentials, anyhow::Erro
     })
 }
 
-#[derive(thiserror::Error)]
-pub enum PublishError {
-    #[error(transparent)]
-    UnexpectedError(#[from] anyhow::Error),
-}
-
-impl std::fmt::Debug for PublishError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        error_chain_fmt(self, f)
-    }
-}
-
-impl ResponseError for PublishError {
-    fn status_code(&self) -> StatusCode {
-        match self {
-            PublishError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
-        }
-    }
-}
-
 pub async fn publish_newsletter(
     body: web::Json<BodyData>,
     pool: web::Data<PgPool>,
@@ -135,4 +115,24 @@ pub async fn publish_newsletter(
         }
     }
     Ok(HttpResponse::Ok().finish())
+}
+
+#[derive(thiserror::Error)]
+pub enum PublishError {
+    #[error(transparent)]
+    UnexpectedError(#[from] anyhow::Error),
+}
+
+impl std::fmt::Debug for PublishError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        error_chain_fmt(self, f)
+    }
+}
+
+impl ResponseError for PublishError {
+    fn status_code(&self) -> StatusCode {
+        match self {
+            PublishError::UnexpectedError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        }
+    }
 }
