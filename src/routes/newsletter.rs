@@ -26,8 +26,8 @@ pub struct Content {
 }
 
 struct Credentials {
-    username: String,
-    password: SecretString,
+    _username: String,
+    _password: SecretString,
 }
 
 #[tracing::instrument(name = "Get confirmed subscribers", skip(pool))]
@@ -81,8 +81,8 @@ fn basic_authentication(headers: &HeaderMap) -> Result<Credentials, anyhow::Erro
         .to_string();
 
     Ok(Credentials {
-        username,
-        password: SecretString::new(password.into()),
+        _username: username,
+        _password: SecretString::new(password.into()),
     })
 }
 
